@@ -1,0 +1,114 @@
+
+TEST 
+
+Meriem El Batoul BIBI - DATA SCIENCE 01
+
+#ex01
+
+#Q01
+```{r}
+
+f <- function(x){
+    return (9*(x^8))
+}
+
+trapezoidal_method <- function(x1, x0,k,f=NULL,eps=1e-2){
+
+    f_image_sum<-function(vec){
+      s <- 0
+      for(x in seq_along(vec)){
+        s <- s + 2* f(vec[x])
+      }
+      return (s)
+    }
+    h1 <- (x1-x0) / (2*k)
+    vec1<- as.numeric(seq((x0+h1),(x1-h1), by=h1))
+    h2<- (x1-x0) / (2*(k+1))
+    vec2 <- as.numeric(seq((x0+h2,(x1-h2),by=h2))
+    I1 <- (h1/2)*(f(x0)+f(x1)+f_image_sum(vec1))
+    I2 <- (h2/2)*(f(x0)+f(x1)+f_image_sum(vec2))
+
+    
+
+    ifelse(abs(I2-I1) < eps,print(paste('for k division ',2*k,I1, ' for k division ', 2*(k+1) , I2)),trapezoidal_method(x1,x0,k+1,f))
+}
+
+
+
+trapezoidal_method(1,0,1,f)
+```
+
+ #Q02
+ 
+```{r}
+simpson <- function(x1, x0 , k ,f=NULL,eps=1e-2){
+  
+ f_image_sum<- function(x){
+    s <- 0
+        for (i in seq_along(x)){
+            if(i %% 2 == 0){
+                s<- s+2*f(x[i])
+            }else{
+                s<- s+ 4*f(x[i])
+            }
+        }
+        return(s)
+  
+    h1 <- (x1 - x0) / (2*k)
+    h2<- (x1 - x0) / (2*(k+1))
+    vec1 <- as.numeric(seq((x0+h1),(x1-h1), by=h1))
+    vec2 <- as.numeric(seq((x0+h2),(x1-h2),by=h2))
+    I1 <- (h1/2)*(f(x0)+f(x1) +f_image_sum(vec1))
+    I2 <- (h2/2)*(f(x0)+f(x1) +f_image_sum(vec2))
+ 
+ }
+ ifelse(abs(I2-I1) < eps,print(paste('for k division ',2*k, I1, ' for k division ', 2*(k+1) , I2 )),simpson(x1,x0,k+1,f))
+  
+
+}
+
+simpson(1,0,2,f)
+```
+
+#ex02
+
+```{r}
+w <- function (x){
+    return (exp(-x))
+}
+w<- function(x){
+    return (log(x)+exp(-x))
+}
+
+fixedpoint <- function(f = NULL,w, x0, eps=1e-9,max_iter=100){
+    
+    x1 <-w(x0)
+    vec_x <- c(x0,x1)
+    vec_y <- c(f(x0),f(x1))
+    i=0
+    while ((abs(x1-x0) > eps) && (i< max_iter)) {
+        x0 <- x1
+        x1 <- w(x0)
+        vec_x <- append(vec_x, x1)
+        y1 <- f(x1)
+        vec_y <- append(vec_y,y1)
+        i <- i + 1
+    }
+    data_x_y <- data.frame(x=vec_x,y=vec_y)
+    return (data_x_y)
+}
+library(ggplot2)
+plot_root <- function(f,w,x0){
+  vec_x_y <- fixedpoint(f,w,x0)
+  plot_func <- ggplot(vec_x_y, aes(x = x, y = y,color='red')) +
+              geom_line(color = "black") +  
+              geom_point(color= 'green,',size=5,shape=15)
+
+  print(plot_func)
+}
+
+plot_root(f,w,0)
+
+```
+
+

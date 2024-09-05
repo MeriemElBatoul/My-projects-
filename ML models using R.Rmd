@@ -1,0 +1,939 @@
+---
+title: "ML-EXAM"
+author: "Meriem El Batoul BIBI"
+date: "2024-06-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+Part 1 :
+Q1. read the dataset “data_final.csv” attached with this document.
+
+# Load the packages
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(patchwork)
+library(tidytext)
+library(Rtsne)
+library(embed)
+library(tidyclust)
+```
+
+
+#import the data : 
+
+```{r}
+spotify <- data_final 
+```
+
+#Exploring Data
+
+Q2. explore the dataset and precise the number variable of each type. Is there any missing values ?
+
+```{r}
+glimpse(spotify) 
+```
+
+
+```{r}
+count_class<-spotify %>% count(class)
+count_class
+```
+
+
+```{r}
+spotify_types<- table(sapply(spoty,class))
+spotify_types
+```
+ 
+# we can observe that the data spotify with 19 features: 11 continous , 5 categorical and 4 integer and the target variable 'class' which is multiclases with 4 classes: high,low,medium,popular  
+
+# also our data contains 148,711 observations .
+
+** There are a number of features with values between 0 and 1; such as acousticness, danceability, liveness ,speechiness and valence
+
+*All of loudness values are negative.
+
+*The variable mode is binary feature.
+
+*The categorical variables are : artist name,track name,track id ,genre
+
+```{r}
+summary(spotify)
+```
+
+
+#with summary we can observe the range and quartile measures(mean median...) for each variable. It also gives the number of missing values, and the value counts for categorical features 
+
+
+ Is there any missing values ?
+
+```{r}
+ sum(is.na(spotify))
+```
+#there is no NAs
+
+
+
+Part 2 : Data exploration : 
+
+Q1. replicate the plots in the step 1 of paper exam (see attached paper exam)
+
+
+```{r}
+spotify %>%
+ggplot(aes(x = class, fill = class)) +
+geom_bar() +
+theme_bw()
+```
+
+# we can see that the higher count relate to the low popularity class of songs and the small one is the high class
+
+
+# this kind of plot doesn’t really look good if there are too many rows(148k observation) . so, i will aply a sampling for may data for a quick overview.
+
+
+```{r}
+sampled_spotify<- spotify%>% 
+  sample_frac(0.30)
+sampled_spotify
+```
+
+I remove the id feature according to you ; 
+
+```{r}
+spotify1<- spotify[,-1]
+```
+
+
+#the correlation matrix : using only the numerical var 
+
+```{r}
+
+numeric_data <- spotify1[sapply(spotify1, is.numeric)]
+
+corr_matrix <- cor(numeric_data)
+
+op <- par(no.readonly = TRUE) 
+layout(matrix(1:1, nrow = 1))
+par(mar = c(5, 5, 4, 2) + 0.1)
+
+
+image(1:nrow(corr_matrix), 1:ncol(corr_matrix), t(corr_matrix),
+      col = colorRampPalette(c("blue", "white", "red"))(20), 
+      axes = FALSE, xlab = "", ylab = "")
+par(mar = c(5, 2, 4, 2) + 0.1)
+
+axis(1, at = 1:nrow(corr_matrix), labels = names(numeric_data), cex.axis = 0.7, las = 2)
+axis(2, at = 1:ncol(corr_matrix), labels = names(numeric_data), cex.axis = 0.7, las = 2)
+```
+
+#we find : 
+higher positve corr between 'loudness' and 'energy'  
+'valensce' and 'danceability' possitvelly correlated
+'accoustisness' with 'loudness' and with 'energy' is heighly negativelly corr   
+'instrumentelness' correlated  negativelly with ' loudness' 
+
+
+
+# the box plot : 
+
+
+```{r}
+bp1 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = acousticness)) +
+  geom_boxplot(fill = "red", alpha = 0.7) +
+  labs(x = "Popularity Class", y = "Acousticness") +
+  theme_minimal()
+
+bp2 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = danceability)) +
+  geom_boxplot(fill = "skyblue", alpha = 0.7) +
+  labs(x = "Popularity Class", y = "danceability") +
+  theme_minimal()
+
+bp3 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = duration_ms)) +
+  geom_boxplot(fill = "green", alpha = 0.7) +
+  labs(x = "Class", y = "duration_ms") +
+  theme_minimal()
+
+bp4 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = energy)) +
+  geom_boxplot(fill = "pink", alpha = 0.7) +
+  labs(x = "Class", y = "energy") +
+  theme_minimal()
+
+bp5 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = instrumentalness)) +
+  geom_boxplot(fill = "purple", alpha = 0.7) +
+  labs(x = "Class", y = "instrumentalness") +
+  theme_minimal()
+
+bp6 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = key)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.7) +
+  labs(x = "Class", y = "key") +
+  theme_minimal()
+
+bp7 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = liveness)) +
+  geom_boxplot(fill = "orange", alpha = 0.7) +
+  labs(x = "Class", y = "liveness") +
+  theme_minimal()
+
+
+bp8 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = loudness)) +
+  geom_boxplot(fill = "darkred", alpha = 0.7) +
+  labs(x = "Class", y = "loudness") +
+  theme_minimal()
+
+bp9 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = mode)) +
+  geom_boxplot(fill = "orange4", alpha = 0.7) +
+  labs(x = "Class", y = "mode") +
+  theme_minimal()
+
+bp10 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = speechiness)) +
+  geom_boxplot(fill = "yellow4", alpha = 0.7) +
+  labs(x = "Class", y = "speechiness") +
+  theme_minimal()
+
+bp11 <- spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = tempo)) +
+  geom_boxplot(fill = "darkgreen", alpha = 0.7) +
+  labs(x = "Class", y = "tempo") +
+  theme_minimal()
+
+bp12 <- spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = time_signature)) +
+  geom_boxplot(fill = "red", alpha = 0.7) +
+  labs(x = "Class", y = "time_signature") +
+  theme_minimal()
+
+bp13 <-  spotify %>%
+  sample_frac(0.3)%>%
+  ggplot(aes(x = class, y = valence)) +
+  geom_boxplot(fill = "yellow", alpha = 0.7) +
+  labs(x = "Class", y = "valence") +
+  theme_minimal()
+
+design <- "
+ABC
+DEE
+FFG
+HIJ
+KLM
+"
+
+bp1 + bp2 + bp3 + bp4 + bp5 + bp6 + bp7 + bp8 + bp9 + bp10 + bp11 + bp12 + bp13 +
+  plot_layout(design = design) +
+  plot_annotation(title = 'for outlayer')
+```
+
+#we can observe  there are two types of outlayers : 
+
+ther are a significante outlayers : in loudness , speechness , liveness....
+non significante outlayerse : ms_duration , time_signature ....we have to remove this outlayers by normalizing step 
+
+
+Q2. Perform a univariate analysis of each variable of the dataset.
+
+
+```{r}
+pt1 <- sampled_spotify %>% 
+  filter(!is.na(duration_ms)) %>%
+  ggplot(aes(duration_ms)) +
+  geom_density(fill = "blue") +
+  theme_minimal() +
+  labs(x = "", title = "Song duration")
+
+pt2 <- sampled_spotify %>% 
+  filter(!is.na(acousticness)) %>%
+  ggplot(aes(acousticness)) +
+  geom_density(fill = "orange", bw = 0.01) +
+  theme_minimal() +
+  labs(x = "", title = "Acousticness")
+
+pt3 <- sampled_spotify %>% 
+  filter(!is.na(danceability)) %>%
+  ggplot(aes(danceability)) +
+  geom_density(fill = "red") +
+  theme_minimal() +
+  labs(x = "", title = "Danceability")
+
+pt4 <- sampled_spotify %>% 
+  filter(!is.na(energy)) %>%
+  ggplot(aes(energy)) +
+  geom_density(fill = "darkgreen") +
+  theme_minimal() +
+  labs(x = "", title = "Energy")
+
+pt5 <- sampled_spotify %>% 
+  filter(instrumentalness > 0) %>% 
+  filter(!is.na(instrumentalness)) %>%
+  ggplot(aes(instrumentalness)) +
+  geom_density(fill = "violet") +
+  scale_x_continuous(trans = "log") +
+  theme_minimal() +
+  labs(x = "", title = "Instrumentalness (log transform)")
+
+pt6 <- sampled_spotify %>% 
+  filter(!is.na(key)) %>% 
+  count(key) %>% 
+  ggplot(aes(key, n, fill = key)) +
+  geom_col() +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "", title = "Key")
+
+
+pt7 <- sampled_spotify %>% 
+  filter(!is.na(liveness)) %>%
+  ggplot(aes(liveness)) +
+  geom_density(fill = "purple") +
+  theme_minimal() +
+  labs(x = "", title = "Liveness")
+
+
+pt8 <- sampled_spotify %>% 
+  filter(!is.na(loudness)) %>%
+  ggplot(aes(loudness)) +
+  geom_density(fill = "lightblue") +
+  theme_minimal() +
+  labs(x = "", title = "Loudness")
+
+pt9 <- sampled_spotify %>% 
+  filter(!is.na(mode)) %>%
+  count(mode) %>% 
+  ggplot(aes(mode, n, fill = as.factor(n))) +
+  geom_col() +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "", title = "Audio Mode")
+
+pt10 <- sampled_spotify %>% 
+  filter(!is.na(speechiness)) %>%
+  ggplot(aes(speechiness)) +
+  geom_density(fill = "darkred") +
+  theme_minimal() +
+  labs(x = "", title = "Speechiness")
+
+pt11 <- sampled_spotify %>% 
+  filter(!is.na(tempo)) %>%
+  ggplot(aes(tempo)) +
+  geom_density(fill = "orange4") +
+  theme_minimal() +
+  labs(x = "", title = "Tempo")
+
+pt12 <- sampled_spotify %>% 
+  filter(!is.na(time_signature)) %>%
+  count(time_signature) %>% 
+  ggplot(aes(time_signature, n, fill = time_signature)) +
+  geom_col() +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "", title = "Time signature")
+
+pt13 <- sampled_spotify %>% 
+  filter(!is.na(valence)) %>%
+  ggplot(aes(valence)) +
+  geom_density(fill = "yellow4") +
+  theme_minimal() +
+  labs(x = "", title = "Audio Valence")
+
+design <- "
+ABC
+DEE
+FFG
+HIJ
+KLM
+"
+
+pt1 + pt2 + pt3 + pt4 + pt5 + pt6 + pt7 + pt8 + pt9 + pt10 + pt11 + pt12 + pt13 +
+  plot_layout(design = design) +
+  plot_annotation(title = 'Song Popularity Features')
+
+```
+
+the visualisation is not clear together 
+
+
+```{r}
+pt1 + pt2 + pt3 + pt4 + pt5 + pt6 + pt7
+```
+
+```{r}
+ pt8 + pt9 + pt10 + pt11 + pt12 + pt13 
+```
+
+
+We find:
+
+Our initial impressions of the data types have largely been confirmed: audio_mode is a boolean feature, and time_signature and key are ordinal (or integer)
+
+A number of features are bounded between 0 and 1: accosticness, danceability, energy, liveliness, speechiness, and audio_valence.
+
+
+
+Q3. Perform a bivariate analysis by analysing the relationship between variables and especially the relationship
+with the target variable.
+
+#the Target Impact: 
+
+
+```{r}
+spotify %>% 
+  sample_frac(0.3)%>%
+  select(where(is.numeric), class, -id) %>% 
+  drop_na() %>% 
+  filter(instrumentalness > 0) %>% 
+  mutate(instrumentalness = log10(instrumentalness)) %>% 
+  pivot_longer(cols = -class, names_to = "type", values_to = "value") %>% 
+  ggplot(aes(value, fill = class)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ type, scales = "free") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  labs(title = "Target impact with numerical features")
+```
+We find:
+
+There are no features that show strong differences in their distributions for diffrent classes songs.
+
+Some features like energy, audio_valence, and perhaps tempo show some degree of difference between target classes. Others, like song_duration_ms or liveness appear to interact almost perfectly.
+
+
+```{r}
+spotify %>%
+  drop_na() %>%
+  select(mode, key, time_signature, class) %>%
+  mutate(mode = as.factor(as.numeric(mode))) %>%
+  pivot_longer(
+    c(-class), 
+    names_to = "type", 
+    values_to = "value",
+    values_transform = list(value = as.character) 
+  ) %>%
+  mutate(type = fct_relevel(as.factor(type), c("mode", "time_signature", "key"))) %>%
+  ggplot(aes(value, fill = class)) +
+  geom_bar(position = "dodge") +
+  facet_wrap(~ type, scales = "free", nrow = 2) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  labs(title = "Target impact with categorical features ")
+```
+
+the imbalance between the classes of popularity songs appears to be pretty universal for all realisations of all features
+
+#feature interactions
+
+```{r}
+spotify %>% 
+  drop_na() %>% 
+  ggplot(aes(energy, fill = as.factor(time_signature))) +  
+  geom_density(alpha = 0.5, bw = 0.03) +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+#We find:
+
+There are clear differences between the energy peaks for time_signature = 2 vs 4.
+
+Smaller differences exist between the other values. 3 and 4 are the categories with the large numbers, and 4 is clearly more energetic than 3.
+
+
+```{r}
+spotify %>% 
+  drop_na() %>% 
+  ggplot(aes(loudness, fill =as.factor(mode))) +  
+  geom_density(alpha = 0.5, bw = 0.03) +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+# similair densities of the two variabales 
+
+Part 3 : Unsupervised Learning
+
+
+```{r}
+str(spotify)
+```
+
+# dataset containing all variables necessary of an unsupervised learning analysis: 
+
+We’ll exclude the non-informative features (“id,” “artist_name,” “track_name,” “track_id,” and “year”) and the target variable (“class”).
+
+
+Q1. based on you analysis of part 1 and 2 create a dataset containing all variables necessary of an unsupervised
+learning analysis. What are the dimensions of this new dataset ?
+
+
+```{r}
+spotify_model<- subset(spotify, select = -c(1:4,genre,class))
+```
+
+
+```{r}
+spotify_model
+```
+# the new data contain : 14 features and 148,711 rows
+
+#data scalling: 
+```{r}
+spotify_stand <- spotify_model %>% mutate_all(~scale(.) %>% as.vector())
+```
+
+```{r}
+summary(spotify_stand)
+```
+
+Q2. Perform a dimensionality reduction analysis (do all the steps) and analysis its results
+
+#the dimensionality reduction: 
+
+```{r}
+set.seed(42)
+```
+
+#Creating a PCA Recipe
+```{r}
+pca_recipe<- recipe(~., data = spotify_stand) %>% 
+  step_pca(all_predictors())
+pca_recipe
+```
+
+```{r}
+pca_prep1<- prep(pca_recipe)
+pca_prep1
+```
+
+```{r}
+tid_pca <- tidy(pca_prep1, 1)
+tid_pca
+```
+
+#Filtering and Visualizing PCA Components
+```{r}
+tid_pca %>%  
+  filter(
+    component == "PC1" |
+    component == "PC2" |
+    component == "PC3" |
+    component == "PC4"
+   ) %>% 
+  mutate(component = fct_inorder(component)) %>%  
+  ggplot(aes(value, terms, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~component, nrow = 1) +
+  labs(y = NULL) +
+  theme_bw()
+```
+#loudenss and energy make the most positive contibution with the first component and acoustisness contibute nigativelly 
+# second comp :valence and daceability are  the most positive contibution
+# Pc 3: speecheneess and liveness (-) contrb 
+# Pc 4 : mode > (+ contr) key > (- contr)
+
+```{r}
+tid_pca %>%  
+  filter(component %in% paste0("PC", 1:2)) %>% 
+  group_by(component)  %>% 
+  top_n(14, abs(value)) %>% 
+  ungroup() %>% 
+  mutate(terms = reorder_within(terms, abs(value), component)) %>% 
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_y_reordered() +
+  labs(
+    x = "Absolute value of contribution",
+    y = NULL, fill = "Positive?"
+  ) 
+```
+#we confirm what we said in the last plot and the two first component cover all the information (max infos of variables) 
+#this plot show the absolute contribution 
+
+
+```{r}
+pca_prep1 %>% juice()
+```
+
+#we apply an unsupervised model which is k_means to make clusters : 
+
+```{r}
+pca_kmeans <- k_means(num_clusters = 3) %>%
+set_engine("stats") %>%
+set_mode("partition")
+```
+
+```{r}
+pca_kmeans
+```
+#plot
+Q3. Perform Clustering on the dataset. Justify your results and propose a name for each cluster based on
+your findings.
+
+```{r}
+pca<- juice(pca_prep1)
+
+pca_kmeans <- kmeans(pca[, 1:2], centers = 3) 
+
+pca$Cluster <- as.factor(pca_kmeans$cluster)
+
+# Plot PCA with clusters
+ggplot(pca, aes(x = PC1, y = PC2, color = Cluster)) +
+  geom_point(size = 3) +
+  labs(title = "K-means Clustering on PCA-reduced Data",
+       x = "Principal Component 1",
+       y = "Principal Component 2") +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "green", "red")) 
+```
+
+
+#Proposed Cluster Names:
+
+#Green cluster Energetic and Danceable Cluster: This cluster likely contains songs with high danceability, energy, and loudness. These features suggest upbeat and energetic music.
+
+#RED cluster : Acoustic and Reflective Cluster: In this cluster, acousticness and instrumentalness play a significant role. It may represent more acoustic or instrumental music.
+
+#Blue cluster: Instrumental and Calm cluster : higher instrumentalness and lower loudness.
+
+
+
+
+Q5. After analysing the results of question 1-5 in part 3 create a new variable (or more) and add them to
+the original dataset to perform the next steps of analysis.
+
+
+
+```{r}
+clustered_spotify <- bind_cols(spotify, Cluster = pca$Cluster)
+
+# Calculate the mean of each feature for each cluster
+cluster_summary <- clustered_spotify%>%
+  group_by(Cluster) %>%
+  summarise_all(mean)
+
+print(cluster_summary)
+```
+
+```{r}
+str(clustered_spotify)
+```
+
+```{r}
+summary(clustered_spotify)
+```
+
+
+#Part 4 : Supervised Learning 1 : replicate exam
+Q1. use a seed of (13) and split the data set into train and test (25%)
+
+
+```{r}
+set.seed(13)
+```
+
+
+```{r}
+spotify_split<-clustered_spotify %>% initial_split(prop=0.75,strata = class)
+```
+
+
+```{r}
+spotify_train <- spotify_split %>% training()
+spotify_test <- spotify_split %>% testing()
+```
+
+Q2. Create the same recipe proposed in the paper exam (see attached document)
+
+```{r}
+spotify_rec <- spotify_train %>%
+recipe(formula = class ~.) %>%
+ step_corr(all_numeric_predictors(), threshold = 0.9) %>%
+  step_nzv(all_numeric_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_other(all_nominal_predictors(), threshold = 0.05) %>%
+  step_dummy(all_nominal_predictors()) 
+spotify_rec
+```
+
+
+
+Q3. Specify the same two models as in the theoretical exam (see attached exam document)
+
+#the multinomial regresion  modle :
+
+```{r}
+spotify_reg <- multinom_reg(penalty = 0.1,mixture = 0.5) %>%
+  set_mode("classification") %>%
+  set_engine("glmnet")
+spotify_reg
+```
+#the xgboost modle : 
+
+```{r}
+spotify_xg<- boost_tree() %>%
+set_mode("classification") %>%
+set_engine("xgboost")
+spotify_xg
+```
+
+# the recipe and multinomial regression model into a workflow
+```{r}
+spotify_wf_reg <- workflow() %>%
+  add_model(spotify_reg) %>%
+  add_recipe(spotify_rec)
+spotify_wf_reg
+```
+
+#Fit the multinomial regression model to the data
+
+```{r}
+spotify_reg_fit <- spotify_wf_reg %>% fit(spotify_train)
+```
+
+
+
+```{r}
+spotify_reg_fit %>% tidy()
+```
+
+
+```{r}
+spotify_pred <- spotify_reg_fit %>% predict(new_data = spotify_test,type = "prob")
+spotify_pred
+```
+
+
+
+```{r}
+spotify_reg_res <-spotify_wf_reg%>% last_fit(split = spotify_split)
+```
+
+```{r}
+spotify_reg_res%>%collect_metrics()
+```
+#Fit the xg boost model to the data: 
+
+```{r}
+spotify_wf_xg<- workflow() %>%
+  add_model(spotify_xg) %>%
+  add_recipe(spotify_rec)
+spotify_wf_xg
+```
+
+
+```{r}
+spotify_xg_res <- spotify_wf_xg %>% last_fit(split = spotify_split)
+spotify_xg_res %>% collect_metrics()
+```
+
+
+```{r}
+spotify_xg_res %>% collect_predictions()
+```
+
+
+
+
+#confusion matrix for both model : 
+
+#for regression : 
+```{r}
+ spotify_reg_res%>% collect_predictions() %>%
+conf_mat(truth = class,estimate = .pred_class)
+```
+
+#for xg boost : 
+```{r}
+ spotify_xg_res%>% collect_predictions() %>%
+conf_mat(truth = class,estimate = .pred_class)
+```
+
+# present their results : 
+
+#different performance measure : 
+
+ #for regression : 
+```{r}
+spotify_reg_res %>% collect_predictions() %>%
+roc_curve(truth = class, .pred_high,.pred_low,.pred_medium,.pred_popular) %>%
+autoplot()
+```
+
+#metrics : 
+
+```{r}
+spotify_reg_res %>% collect_predictions() %>%
+conf_mat(truth = class,estimate = .pred_class) %>%
+summary()
+```
+
+# for XG boost moodle ; different performance measure :  
+
+```{r}
+spotify_xg_res %>% collect_predictions() %>%
+roc_curve(truth = class, .pred_high,.pred_low,.pred_medium,.pred_popular) %>%
+autoplot()
+```
+#xg metrics 
+```{r}
+spotify_xg_res %>% collect_predictions() %>%
+conf_mat(truth = class,estimate = .pred_class) %>%
+summary()
+```
+
+#Comment : 
+
+according to the metrics we found that xg boost is better than the regression model 
+
+ 
+#Part 5 : Supervised Learning 2 : Improve the exam
+
+the potential improvment to achieve better results: we can make a lot of thing :
+
+Hyperparameter Tuning: applying the grid 
+
+Feature Engineering: .
+
+Ensemble Methods: Consider building an ensemble of XGBoost models with different configurations to further boost performance.
+
+#Feature Engineering : i will drop the id features : 
+```{r}
+best_spotify <- subset(clustered_spotify, select = -c(1:4))
+```
+
+
+```{r}
+str(best_spotify)
+```
+
+```{r}
+best_spotify_split <- best_spotify %>% initial_split(prop = 0.75,strata = class)
+best_spotify_train <- best_spotify_split%>% training()
+best_spotify_test <- best_spotify_split %>% testing()
+```
+
+
+#create a 10-fold cross validation object.
+```{r}
+spotify_cv <- best_spotify_train %>% vfold_cv(v = 10,strata = class)
+```
+
+
+#create a recipe containing a normalization and transform all ordinal variables in the dataset into ordinal scores.
+```{r}
+spotify_rec_final <- best_spotify_train %>%
+recipe(formula = class ~.) %>%
+step_corr(all_numeric_predictors(),threshold = 0.95) %>%
+step_zv(all_numeric_predictors()) %>%
+step_nzv(all_numeric_predictors()) %>%
+step_impute_median(all_numeric_predictors()) %>%
+step_impute_mode(all_nominal_predictors()) %>%
+step_normalize(all_numeric_predictors()) %>%
+step_ordinalscore(all_ordered_predictors())%>%
+step_other(all_nominal_predictors(),threshold = 0.05) %>%
+step_dummy(all_nominal_predictors(),one_hot = T)
+spoty_rec_final
+```
+#model specification: tune penality : 
+```{r}
+spotify_reg1 <- multinom_reg(penalty = tune(),mixture = 0.5) %>%
+  set_mode("classification") %>%
+  set_engine("glmnet")
+spotify_reg1
+```
+
+#all the information in a workflow
+```{r}
+spotify_wf_final <- workflow() %>%
+add_recipe(spotify_rec_final) %>%
+add_model(spotify_reg1)
+spotify_wf_final
+```
+
+#create a grid containing some proposed values (10 values) for the penalty :
+
+```{r}
+spotify_grid <- grid_regular(penalty(range = c(50, 500)),
+levels = 10)
+spotify_grid
+```
+
+
+```{r}
+spotify_grid2 <- tibble(penalty = seq(50,500,50))
+spotify_grid2
+```
+
+#Tune the hyperparameter
+```{r}
+ctrl <- control_grid(verbose = T)
+```
+
+
+#the best 5 values of the penalty 
+```{r}
+best_spotify_res <- spotify_wf_final %>%
+tune_grid(resamples = spotify_cv,grid = spotify_grid2,control = ctrl)
+```
+
+
+
+```{r}
+best_spotify_res %>% show_best(metric = "accuracy", n =10)
+```
+#select the best value of the penalty
+
+```{r}
+spotify_best <- best_spotify_res %>% select_best(metric = "accuracy")
+```
+
+```{r}
+spotify_best
+```
+
+

@@ -1,0 +1,565 @@
+---
+title: "SCP Meriem El Batoul BIBI GR'01'"
+output: html_document
+date: "2024-01-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+#Exercise 01 :
+
+#The linear approximation to f at Xn is the linear function :
+L(x) = f(xn) + (x − xn)f′(xn)
+
+we're trying to find the root of a function f(x)=0 , f can be approximated near xn by its tangent line.
+We would like to get a better approximation to the function using quadratic approximation , so we need to use second derivative. 
+
+#the use of a quadratic approximation in the Newton Raphson method can lead to faster convergence and fewer iterations to find the root .
+
+#the newton raphson algorithm : 
+xn+1=Xn-f(xn)/f′(xn)+0.5*(x − xn)f′′(xn)/f′(xn)
+
+#the algorithm : 
+
+```{r}
+quadratic <- function(g, div_g,div2_g,x0, eps = 1e-9, max.iter = 100){
+g0<- g(x0)
+div_g <- div_g(x0)
+div2_g <- div2_g(x0)
+iter <- 0
+
+while ((abs(g0) > eps) && (iter < max.iter)) {
+x1 <- x0 - g0/div_g + 0.5 * g0 * div2_g/div_g^2
+
+g0 <- g(x1)
+div_g <- div_g(x1)
+div2_g<-div2_g(x1)
+iter <- iter + 1
+print(paste("At iteration", iter, "value of x is:", x1))
+
+x0 <- x1
+
+}
+if (abs(g0) <= eps) {
+    print("Algorithm converged")
+    return(x1)
+  }
+
+  if (div2_g == 0) {
+    print("No solution found. Finding minimum or maximum.")
+    if (div2_g(x0) > 0) {
+      min-max <- optimize(g, c(-Inf, Inf), maximum = FALSE)$minimum
+    } else {
+      min-max <- optimize(g, c(-Inf, Inf), maximum = TRUE)$minimum
+    }
+    return(min-max)
+  } else {
+    print("Algorithm failed to converge")
+    return(NULL)
+  }
+}
+```
+
+ So, in summary, when the second derivative is zero that`s indicate no solution, the code determines whether to search for the minimum or maximum based on the sign of the second derivative and the optimize function will return either negative or positive as the minimum or maximum point, depending on the sign of the second derivative.
+
+
+#Modified Newton raphson method;
+x1<-x0+x0*asin((-f0) / (x0 * df))
+
+
+```{r}
+Modified_Newtonraphson<- function(f, df,x0, eps = 1e-9, max.iter = 100){
+f0<- f(x0)
+df <- df(x0)
+iter <- 0
+while ((abs(f0) > eps) && (iter < max.iter)) {
+x1 <- x0 + x0 * asin (-(f0) / (x0 * df))
+f0 <- f(x1)
+iter <- iter + 1
+print(paste("At iteration", iter, "value of x is:", x1))
+x0 <- x1
+df <- df(x1)
+}
+if (abs(f0) > eps) {
+print("Algorithm failed to converge")
+return(NULL)
+} else {
+print("Algorithm converged")
+return(x1)
+}
+}
+```
+
+
+#APPLICATION ; 
+
+```{r}
+g <- function(x) cos(x)-x
+div_g <- function(x) -sin(x)-1
+div2_g <-function(x) -cos(x)
+
+quadratic(g, div_g,div2_g,1, eps = 1e-9)
+```
+
+#the algorithm converged using the quadratic method & the root finding is 0.7390851 after 14 iterations
+
+```{r}
+f<- function(x) cos(x)-x
+df <- function(x) -sin(x)-1
+
+Modified_Newtonraphson(f,df,1, eps = 1e-9)
+```
+#with the same intiale value X0=1 ; the algorithm converged & we find the same root(0.7390851) faster with fewer alteration(3 iterations) using the inverse sign method campared with the quadratic one.
+
+```{r}
+g <- function(x) cos(x)-x
+div_g <- function(x) -sin(x)-1
+div2_g <-function(x) -cos(x)
+
+quadratic(g, div_g,div2_g,3, eps = 1e-9)
+```
+
+#we changed the initial value x0=3 ,we found more than 100 iterations with the quadratic method thats why the algorithm failed to converge & return null
+
+```{r}
+f<- function(x) cos(x)-x
+df <- function(x) -sin(x)-1
+
+Modified_Newtonraphson(f,df,3, eps = 1e-9)
+```
+#this algorithm couldnt converge : maybe the initial guess is far from the root.or the function does not difined in some values 
+
+
+```{r}
+g<- function(x) cos(x)-x
+div_g <- function(x) -sin(x)-1
+div2_g <-function(x) -cos(x)
+
+quadratic(g, div_g,div2_g,6, eps = 1e-9)
+```
+#"Algorithm failed to converge"
+#we changed the initial value x0=6 ,we found more than 100 iterations with the quadratic method thats why the algorithm failed to converge & return null,maybe the initial guess is far from the root.
+
+```{r}
+f<- function(x) cos(x)-x
+df <- function(x) -sin(x)-1
+
+Modified_Newtonraphson(f,df,6, eps = 1e-9)
+```
+#this algorithm couldnt converge: maybe the initial guess is far from the root or the function does not difined in some values
+
+```{r}
+g <- function(x)log(x)- exp(-x)
+div_g <- function(x) 1/x + exp(-x)
+div2_g <-function(x) -1/x^2 - exp(-x)
+
+quadratic(g, div_g,div2_g,2, eps = 1e-9)
+```
+#after 24 iterations ; the algorithm converged using the quadratic method & the root finding is 1.3098
+
+```{r}
+f <- function(x)log(x)- exp(-x)
+df <- function(x) 1/x + exp(-x)
+
+Modified_Newtonraphson(f,df,2, eps = 1e-9)
+```
+#with the same intiale value X0=2 ; the algorithm converged & we find the same root(1.3098) faster with fewer alteration(5 iterations) using the inverse sign method campared with the quadratic one.
+
+```{r}
+g <- function(x)x^3-x-3
+div_g <- function(x) 3*x^2-1
+div2_g <-function(x) 6*x
+
+quadratic(g, div_g,div2_g,0, eps = 1e-9)
+```
+#using x0=0;the algorithm converged using the quadratic method & the root finding is 1.6717 after 84 iterations
+
+```{r}
+f<- function(x)x^3-x-3
+df <- function(x) 3*x^2-1
+
+Modified_Newtonraphson(f,df,0, eps = 1e-9)
+```
+#this algorithm couldnt converge #this algorithm couldnt converge : maybe the initial guess is far from the root.or the function does not difined in some values
+
+```{r}
+g <- function(x)x^3-7*x^2+14*x-8
+div_g <- function(x) 3*x^2-14*x+14
+div2_g <-function(x) 6*x-14
+quadratic(g, div_g,div2_g,1.9, eps = 1e-9)
+```
+#we used the initial value x0=1,1 ,we found more than 100 iterations with the quadratic method thats why the algorithm failed to converge & return null
+#the algorithm converged with x0=1,9 with 29 iterations and the root = 2 using the quadratic method 
+
+```{r}
+f<- function(x)x^3-7*x^2+14*x-8
+df <- function(x) 3*x^2-14*x+14
+
+Modified_Newtonraphson(f,df,1.9, eps = 1e-9)
+```
+#with the same intiale value X0=1,1 ; the algorithm converged in the 4th iteration & we found the root (1) faster with fewer alteration using the inverse sign method campared with the quadratic one.
+ 
+ 
+#the same results for x0=1,2;1,3 :the algorithm failed to converge with the quadratic method(iter>100)and we got 'null' but with the second method of the inverse sign the algorithm converge & we found the same root(1) as the first x0=1,1 but in the 5th&6th iteration respectively 
+
+#with x0=1,4;1,5 : the algorithm failed to converge with both methods 
+
+#with x0=1,6;1,7;1,8 : the algorithm failed to converge with the quadratic method(iter>100)and we got 'null' but with the second method of the inverse sign the algorithm converge & we found the same root(2) with 4&5 iterations
+
+#with x0=1,9 : the algorithm converged with both but with the inverse sign method better ; faster & fewer iteration (3rd iteration)
+
+
+
+```{r}
+g <- function(x)log(x)*exp(-x)
+div_g <- function(x) 1/x * exp(-x)-log(x)*exp(-x)
+div2_g <-function(x) -1/x^2 *exp(-x)+log(x)*exp(-x)
+
+quadratic(g, div_g,div2_g,2, eps = 1e-9)
+```
+#after 9 iterations ; the algorithm converged using the quadratic method & the root finding is 22.14263 with x0=2
+
+```{r}
+f<- function(x)log(x)*exp(-x)
+df <- function(x) 1/x * exp(-x)-log(x)*exp(-x)
+
+Modified_Newtonraphson(f,df,2, eps = 1e-9)
+```
+#this algorithm couldnt converge#this algorithm couldnt converge : maybe the initial guess is far from the root.or the function does not difined in some values
+
+#Exo 02: derivative and anti derivative of a polynomial
+
+```{r}
+calculate_derivative<-function(x){
+    x <- strsplit(x,'')[[1]]
+    x <- x[-c(1,2)]
+    a <- c(x[1])
+    j <- 2
+    for(i in seq(4,length(x),5)){
+        params <- as.numeric(x[i])*j
+        a <- append(a,paste('+',params,'X^',j-1))
+        j <- j+1
+    }
+
+    return (paste(a,collapse=""))
+}
+print(calculate_derivative('3+8x+7x^2'))
+```
+
+```{r}
+anti_drvt<-function(x){
+    x <- strsplit(x,'')[[1]]
+    a <- c(paste('X+',as.numeric(x[3])/2,'X^2'))
+
+    z <- x[-(1:5)]
+    
+    j <- 3
+    for(i in seq(1,length(z),5)){
+        params <- as.numeric(z[i])/j
+
+        a <- append(a,paste('+',params,'X^',j))
+        j <- j+1
+    }
+
+    return (paste(a,collapse=""))
+}
+```
+
+
+#exo 03;
+
+1- The Newton-Raphson method is an iterative numerical technique for finding the root of a real-valued function.This rule is iteratively applied until the difference between successive approximations is small enough (convergence criterion is met), indicating that a sufficiently accurate root has been found.
+#The Newton-Raphson iteration rule: xn+1=xn-f(xn)/f'(xn)
+
+'xn':the current approximation of the root
+'xn+1': the next approximation of the root
+
+#For the nth root of a real number z, we can apply the Newton-Raphson method :
+
+
+```{r}
+newton_raphson_nth_root <- function(f, df, x0,eps = 1e-9, max.iter = 100){
+f0 <- f(x0)
+df0 <- df(x0)
+iter <- 0
+while ((abs(f0) > eps) && (iter < max.iter)) {
+x1 <- x0 - f0/df0
+f0 <- f(x1)
+df0 <- df(x1)
+iter <- iter + 1
+print(paste("At iteration", iter, "value of x is:", x1))
+x0 <- x1
+}
+if (abs(f0) > eps) {
+print("Algorithm failed to converge")
+return(NULL)
+} else {
+print("Algorithm converged")
+return(x1)
+}
+}
+```
+
+
+```{r}
+f <- function(x) x^n - z
+  df <- function(x) n * x^(n - 1)
+newton_raphson_nth_root(f,df,x0,eps = 1e-9, max_iter = 100)
+```
+
+
+```{r}
+nth_root_iteration_rule <- function(f, n, z, x0, eps = 1e-9, max.iter = 100) {
+  f0 <- f(x0)
+  iter <- 0
+  
+  while ((abs(f0) > eps) && (iter < max.iter)) {
+    x1 <- (1/n) * ((n - 1) * x0 + z / (x0^(n-1)))
+    f0 <- f(x1)
+    iter <- iter + 1
+    print(paste("At iteration", iter, "value of x is:", x1))
+    x0 <- x1
+  }
+  
+  if (abs(f0) > eps) {
+    print("Algorithm failed to converge")
+    return(NULL)
+  } else {
+    print("Algorithm converged")
+    return(x1)
+  }
+}
+
+```
+
+
+```{r}
+f <- function(x) x^n - z
+nth_root_iteration_rule (f,n,z,x0, tol = 1e-9, max_iter = 100)
+```
+
+
+#Theoretical Comparison:
+     Newton-Raphson Method:
+
+*applicable to various functions.
+*Requires the computation of both the function and its derivative.
+*May not converge or converge slowly if the initial guess is far from the root.
+
+    Provided Rule:
+
+*doesn't require the computation of derivatives.
+*Potentially faster convergence for specific problems.
+*May not be as general-purpose as the Newton-Raphson method.
+*Convergence depend on the specific problem.
+
+#A new Hybrid method
+
+#1st idea 
+
+```{r}
+helper_fun1<- function(f, a, b, max.iter = 100) {
+  for (iteration in 1:2) {
+    c <- (a + b) / 2
+    fa <- f(a)
+    fc <- f(c)
+    
+    if (fa * fc < 0) {
+      b <- c
+    } else {
+      a <- c
+    }
+  }
+  return(c(a, b))
+}
+
+helper_fun2<- function(f, df,x0, eps = 1e-9, max.iter = 100){
+f0<- f(x0)
+df <- df(x0)
+iter <- 0
+while ((abs(f0) > eps) && (iter < max.iter)) {
+x1 <- x0 + x0 * asin(f0) / (x0 * df)
+f0 <- f(x1)
+iter <- iter + 1
+print(paste("At iteration", iter, "value of x is:", x1))
+x0 <- x1
+df <- df(x1)
+}
+if (abs(f0) > eps) {
+print("Algorithm failed to converge")
+return(NULL)
+} else {
+print("Algorithm converged")
+return(x1)
+}
+}
+
+my_function <- function(z, n, a, b, eps = 1e-9, max.iter = 100) {
+  f <- function(x) x^n - z
+  df <- function(x) n * x^(n - 1)
+  
+  first_interval <- function1(f, a, b)
+  
+  x0 <- mean(first_interval)
+  solution <- helper_fun2(f, df, x0, eps, max.iter)
+  
+  return(solution)
+}
+
+```
+
+#2nd idea
+
+```{r}
+my_function2 <- function(z, n, a, b, eps = 1e-9, max.iter = 100)
+helper_fun1<- function(f, a, b, max.iter = 100) {
+  for (iteration in 1:2) {
+    c <- (a + b) / 2
+    fa <- f(a)
+    fc <- f(c)
+    
+    if (fa * fc < 0) {
+      b <- c
+    } else {
+      a <- c
+    }
+  }
+  return(c(a, b))
+  }
+helper_fun2<- function(f, df,x0, eps = 1e-9, max.iter = 100){
+f0<- f(x0)
+df <- df(x0)
+iter <- 0
+while ((abs(f0) > eps) && (iter < max.iter)) {
+x1 <- x0 + x0 * asin(f0) / (x0 * df)
+f0 <- f(x1)
+iter <- iter + 1
+print(paste("At iteration", iter, "value of x is:", x1))
+x0 <- x1
+df <- df(x1)
+}
+if (abs(f0) > eps) {
+print("Algorithm failed to converge")
+return(NULL)
+} else {
+print("Algorithm converged")
+return(x1)
+}
+f <- function(x) x^n - z
+  df <- function(x) n * x^(n - 1)
+first_interval <- function1(f, a, b)
+  
+  x0 <- mean(first_interval)
+  solution <- helper_fun2(f, df, x0, eps, max.iter)
+  
+  return(solution)
+}
+```
+
+#the comparison between the two ideas : 
+
+#Inclusion Inside Main Function:
+Organization: Keeps related functions together, better code organization.
+Clarity: Easy to understand as everything is in one place.
+Flexibility: Less flexible for use in other parts of other code
+duplication: May lead to duplicated code if similar helpers are needed elsewhere.
+
+#Defined Separately:
+Flexibility: More flexible, allows the use in different parts of the code
+Global Access: Increased risk if not carefully managed
+
+
+```{r}
+f <- function(x) x^n - z
+nth_root_iteration_rule (f,z,n,x0, eps= 1e-9, max_iter = 100)
+```
+
+for the application we need : the value of (a,b,x0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
